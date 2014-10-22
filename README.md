@@ -1,6 +1,20 @@
-# Heroku deployment step
+# Heroku deployment step (Conditional Fork)
 
 Deploy your code to Heroku. This step requires that you deploy to a Heroku deploy target.
+
+# Using conditional (Feature Fork)
+
+By using environment variables we can conditionally skip the heroku deploy
+
+set environment vars
+name: HEROKU_DEPLOY
+value: true
+
+set environment vars
+name: HEROKU_DEPLOY
+value: false
+
+** the rest of the readme is verbatim **
 
 # Using wercker SSH key pair
 
