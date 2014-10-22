@@ -259,6 +259,15 @@ test_authentication() {
     fi
 }
 
+check_heroku_target() {
+    if [ -z "$HEROKU_DEPLOY"  ]; then
+        echo true
+    else
+        echo false
+    fi
+}
+
+
 # === Main flow starts here ===
 ssh_key_path="$(mktemp -d)/id_rsa";
 gitssh_path="$(mktemp)";
@@ -266,37 +275,44 @@ error_suffix='Please add this option to the wercker.yml or add a heroku deployme
 exit_code_push=0;
 exit_code_run=0;
 
-# Initialize some values
-init_wercker_environment_variables;
-init_netrc "$WERCKER_HEROKU_DEPLOY_USER" "$WERCKER_HEROKU_DEPLOY_KEY";
-init_ssh;
-init_git "$WERCKER_HEROKU_DEPLOY_USER" "$WERCKER_HEROKU_DEPLOY_USER";
-init_gitssh "$gitssh_path" "$ssh_key_path";
+if [ -n "$HEROKU_DEPLOY" == "true" ]; then
+    # Initialize some values
+    init_wercker_environment_variables;
+    init_netrc "$WERCKER_HEROKU_DEPLOY_USER" "$WERCKER_HEROKU_DEPLOY_KEY";
+    init_ssh;
+    init_git "$WERCKER_HEROKU_DEPLOY_USER" "$WERCKER_HEROKU_DEPLOY_USER";
+    init_gitssh "$gitssh_path" "$ssh_key_path";
 
-cd $WERCKER_HEROKU_DEPLOY_SOURCE_DIR || fail "could not change directory to source_dir \"$WERCKER_HEROKU_DEPLOY_SOURCE_DIR\""
+    cd $WERCKER_HEROKU_DEPLOY_SOURCE_DIR || fail "could not change directory to source_dir \"$WERCKER_HEROKU_DEPLOY_SOURCE_DIR\""
 
-# Test credentials
-test_authentication "$WERCKER_HEROKU_DEPLOY_APP_NAME";
+    # Test credentials
+    test_authentication "$WERCKER_HEROKU_DEPLOY_APP_NAME";
 
-# Check if the user supplied a wercker key-name
-if [ -n "$WERCKER_HEROKU_DEPLOY_KEY_NAME" ]; then
-    use_wercker_ssh_key "$ssh_key_path" "$WERCKER_HEROKU_DEPLOY_KEY_NAME";
+    # Check if the user supplied a wercker key-name
+    if [ -n "$WERCKER_HEROKU_DEPLOY_KEY_NAME" ]; then
+        use_wercker_ssh_key "$ssh_key_path" "$WERCKER_HEROKU_DEPLOY_KEY_NAME";
+    else
+        use_random_ssh_key "$ssh_key_path";
+    fi
+
+    # Then check if the user wants to use the git repository or use the files in the source directory
+    if [ "$WERCKER_HEROKU_DEPLOY_KEEP_REPOSITORY" == "true" ]; then
+        use_current_git_directory "$WERCKER_HEROKU_DEPLOY_SOURCE_DIR" "$WERCKER_GIT_BRANCH";
+    else
+        use_new_git_repository "$WERCKER_HEROKU_DEPLOY_SOURCE_DIR";
+    fi
+
+    # Try to push the code
+    set +e;
+    push_code "$WERCKER_HEROKU_DEPLOY_APP_NAME";
+    exit_code_push=$?
+    set -e;
+
 else
-    use_random_ssh_key "$ssh_key_path";
+    echo "-- skipping heroku-deploy"
+    exit_code_push=0
+    export WERCKER_HEROKU_DEPLOY_RUN=false
 fi
-
-# Then check if the user wants to use the git repository or use the files in the source directory
-if [ "$WERCKER_HEROKU_DEPLOY_KEEP_REPOSITORY" == "true" ]; then
-    use_current_git_directory "$WERCKER_HEROKU_DEPLOY_SOURCE_DIR" "$WERCKER_GIT_BRANCH";
-else
-    use_new_git_repository "$WERCKER_HEROKU_DEPLOY_SOURCE_DIR";
-fi
-
-# Try to push the code
-set +e;
-push_code "$WERCKER_HEROKU_DEPLOY_APP_NAME";
-exit_code_push=$?
-set -e;
 
 # Retry pushing the code, if the first push failed and retry was not disabled
 if [ $exit_code_push -ne 0 ]; then
