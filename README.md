@@ -1,4 +1,5 @@
 # Heroku deployment step (Conditional Fork)
+[![wercker status](https://app.wercker.com/status/b266b100aa5ba105be6936a379aff064/m "wercker status")](https://app.wercker.com/project/bykey/b266b100aa5ba105be6936a379aff064)
 
 Deploy your code to Heroku. This step requires that you deploy to a Heroku deploy target.
 
@@ -32,7 +33,7 @@ To prevent this you can generate a private/public key pair on wercker and manual
 ``` yaml
 deploy:
     steps:
-        - heroku-deploy:
+        - conditional-heroku-deploy:
             key-name: MY_DEPLOY_KEY
 ```
 
@@ -56,7 +57,7 @@ In the above example the `MY_DEPLOY_KEY` should match the environment variable n
 ``` yaml
 deploy:
     steps:
-        - heroku-deploy:
+        - conditional-heroku-deploy:
             key-name: MY_DEPLOY_KEY
 ```
 
@@ -69,6 +70,9 @@ deploy:
 The MIT License (MIT)
 
 # Changelog
+
+## Feature Fork - Conditional
+- added rough implementation using $HEROKU_DEPLOY=true/false
 
 ## 2.2.1
 
