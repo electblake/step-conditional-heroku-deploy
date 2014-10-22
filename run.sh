@@ -310,8 +310,9 @@ if [ -n "$HEROKU_DEPLOY" == "true" ]; then
 
 else
     echo "-- skipping heroku-deploy"
-    exit_code_push=0
     export WERCKER_HEROKU_DEPLOY_RUN=false
+    exit_code_push=1
+    exit_code_run=1
 fi
 
 # Retry pushing the code, if the first push failed and retry was not disabled
